@@ -1,0 +1,23 @@
+{
+  "name": "funding-tools",
+  "version": "1.0.0",
+  "description": "tools for creating ispo dashboard etc.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reitcircles/funding-tools.git"
+  },
+  "author": "nsaha",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/reitcircles/funding-tools/issues"
+  },
+  "homepage": "https://github.com/reitcircles/funding-tools#readme",
+  "dependencies": {
+    "axios": "^0.27.1",
+    "dotenv": "^16.0.0"
+  }
+}
