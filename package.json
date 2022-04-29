@@ -18,6 +18,10 @@
   "homepage": "https://github.com/reitcircles/funding-tools#readme",
   "dependencies": {
     "axios": "^0.27.1",
-    "dotenv": "^16.0.0"
-  }
+    "dotenv": "^16.0.0",
+    "lodash": "^4.17.21",
+    "mysql2": "^2.3.3",
+    "sequelize": "^6.19.0"
+  },
+  "devDependencies": {}
 }
