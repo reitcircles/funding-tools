@@ -144,19 +144,20 @@ class PoolData {
     
 }
 
-
-(async() => {
-    
-    var r = new PoolD()
-    
-    //Be careful of this. It resets the Database.
-    var init = true
-
-    //Connect to db
-    await r.connect_db(init)
-
-    //Fetch data from blockfrost to custom db
-    await r.fetch_sp_data()
-    
-})()
+if (require.main === module){
+    (async() => {
+	
+	var r = new PoolD()
+	
+	//Be careful of this. It resets the Database.
+	var init = true
+	
+	//Connect to db
+	await r.connect_db(init)
+	
+	//Fetch data from blockfrost to custom db
+	await r.fetch_sp_data()
+	
+    })()
+}
     

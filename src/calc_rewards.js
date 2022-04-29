@@ -20,10 +20,30 @@ class Rewards{
 	this.saddr = stakeAddr
 	this.rewardFactor = 0.19
 	this.maxDelegation = 64*Math.pow(10,12)//in lovelace
+	this.startEpoch = 332
+	
     }
 
+
+    async find_latest_epoch(){
+	var URL =  `/epochs/latest`
+	try{
+	    var response = await service.get(URL)
+	    console.log(`statusCode: ${response.status}`)
+	    return parseInt(response.data.epoch)
+	}
+	catch(error){
+            console.error(error)
+        }
+    }    
+    
     async calculate_base_reward(epoch_array){
 
+	//default value of epoch_array
+	if (epoch_array == null){
+	    epoch_array = _.range(this.startEpoch, this.find_latest_epoch()-1)	    
+	}
+	
 	//first get a saturation tables
 	const [rsaturation, rsat_meta] = await db.sequelize.query(`SELECT * FROM  PoolHistories where epoch BETWEEN ${epoch_array[0]} and ${epoch_array.slice(-1)[0]}`);
 
@@ -72,18 +92,27 @@ class Rewards{
     
 }
 
-(async() => {
+module.exports = {
+    Rewards
+}
 
-    var saddr = "stake1u80038u04hrlrn5cjeskjmtddpahgnvxqsmmy7d8xq6uecq62zwsw"
-    
-    var r = new Rewards(saddr)
-    
-    //Connect to db
-    await r.connect_db(false)
 
-    //Fetch data from blockfrost to custom db
-    let reward = await r.calculate_base_reward([332,333])
-    console.log(reward)
-})()
+if (require.main === module){
+
+
+    (async() => {
+	
+	var saddr = "stake1u80038u04hrlrn5cjeskjmtddpahgnvxqsmmy7d8xq6uecq62zwsw"
+	
+	var r = new Rewards(saddr)
+	
+	//Connect to db
+	await r.connect_db(false)
+	
+	//Fetch data from blockfrost to custom db
+	let reward = await r.calculate_base_reward([332,333])
+	console.log(reward)
+    })()
+}
     
 
