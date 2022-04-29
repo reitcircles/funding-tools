@@ -53,6 +53,13 @@ class Rewards{
 
 	return reward
     }    
+
+    async calculate_lt_reward(){
+	//Total extra rewards: T
+	//0.1T:0.2T:0.7T ratio of extra rewards to be distributed proportional to duration of delegation.
+	//Total duration in epochs: E
+    }
+
     
     async connect_db(initialize){
 	await db.sequelize.authenticate();
