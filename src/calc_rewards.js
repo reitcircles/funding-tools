@@ -19,7 +19,7 @@ class Rewards{
     constructor(stakeAddr){
 	this.saddr = stakeAddr
 	this.rewardFactor = 0.19
-	this.maxDelegation = 64*10^12//in lovelace
+	this.maxDelegation = 64*Math.pow(10,12)//in lovelace
     }
 
     async calculate_base_reward(epoch_array){
@@ -42,11 +42,13 @@ class Rewards{
 
 	console.log(sresult)
 
-	let reward = 0
+	let reward = {}
 	sresult.map(x => {
-	    let epoch_saturation = a[x.epoch]/this.maxDelegation
-	    console.log(`Epoch ${x.epoch} saturation is ${epoch_saturation}`)
-	    reward += (x.Amount/10^6)*this.rewardFactor*epoch_saturation
+	    let saturation = a[x.epoch]/this.maxDelegation
+	    let es = (saturation > 1.0)? 1: saturation
+	    console.log(`Epoch ${x.epoch} saturation is ${es}`)
+
+	    reward[x.epoch] = (x.Amount/Math.pow(10,6))*this.rewardFactor*es
 	})
 
 	return reward
