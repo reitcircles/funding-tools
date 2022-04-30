@@ -4,6 +4,7 @@
 // Require the framework and instantiate it
 const fastify = require('fastify')({ logger: true })
 const createError = require('http-errors')
+
 const cr = require("./calc_rewards")
 
 
@@ -13,15 +14,26 @@ fastify.get('/', async (request, reply) => {
 })
 
 
-fastify.get('rewards/:stakeAddr' async (request, reply) => {
+fastify.get('/rewards/:stakeAddr', async (request, reply) => {
+
     console.log(`rewards to be calculated for the staking address:${request.params["stakeAddr"]}`)
 
-    if (request.stakeAddr != null){
+    console.log(request)
+    if (request.params.stakeAddr != null){
 	//TODO: Verify the stake address format.
-	let R = new cr.Rewards(request.stakeAddr)	
-	reply.send({baseReward: R.calculate_base_reward()})
+
+	//Connect to db
+	await cr.dbConnect(false)
+	
+	let R = new cr.Rewards(request.params.stakeAddr)
+	
+	//Fetch data from blockfrost to custom db
+	let reward = await R.calculate_base_reward([332,333])
+
+	reply.send({baseReward: reward})
     }
-    else{
+    else
+    {
 	reply.send(createError(404, "The stakeAddress is missing"))
     }
     
@@ -29,8 +41,7 @@ fastify.get('rewards/:stakeAddr' async (request, reply) => {
 
 
 if (require.main === module){
-
-
+    
     // Run the server!
     const start = async () => {
 	try {

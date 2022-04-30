@@ -14,6 +14,21 @@ let service = axios.create({
     }
 });
 
+let dbConnect =  async (initialize) => {
+	try{
+	    await db.sequelize.authenticate();
+	    console.log('Connection has been established successfully.');
+	    if (initialize){
+		await db.StakePool.sync({ force: true });
+		console.log("The table for the StakePool model was just (re)created!");
+	    }			    
+	}
+	catch(err){
+	    console.log(err)
+	}
+
+}
+
 
 class Rewards{
     constructor(stakeAddr){
@@ -26,52 +41,55 @@ class Rewards{
 
 
     async find_latest_epoch(){
-	var URL =  `/epochs/latest`
-	try{
-	    var response = await service.get(URL)
-	    console.log(`statusCode: ${response.status}`)
-	    return parseInt(response.data.epoch)
-	}
-	catch(error){
-            console.error(error)
-        }
+	
     }    
     
     async calculate_base_reward(epoch_array){
 
-	//default value of epoch_array
-	if (epoch_array == null){
-	    epoch_array = _.range(this.startEpoch, this.find_latest_epoch()-1)	    
+	try{
+	    let total_rewards = 0
+	    
+	    //default value of epoch_array
+	    if (epoch_array == null){
+		epoch_array = _.range(this.startEpoch, this.find_latest_epoch()-1)	    
+	    }
+	    
+	    //first get a saturation tables
+	    const [rsaturation, rsat_meta] = await db.sequelize.query(`SELECT * FROM  PoolHistories where epoch BETWEEN ${epoch_array[0]} and ${epoch_array.slice(-1)[0]}`);
+
+	    console.log(rsaturation)
+
+	    let a = new Object()
+	    
+	    rsaturation.map(x => {
+		a[x.epoch] = x.activeStake
+	    })
+
+	    console.log(a)
+	    
+	    //Get the stakes corresponding to the stake addr.
+	    const [sresult, smeta] = await db.sequelize.query(`SELECT * FROM StakePools where stakeAddr="${this.saddr}" and epoch BETWEEN ${epoch_array[0]} and ${epoch_array.slice(-1)[0]}`);
+
+	    console.log(sresult)
+
+	    let reward = {}
+	    sresult.map(x => {
+		let saturation = a[x.epoch]/this.maxDelegation
+		let es = (saturation > 1.0)? 1: saturation
+		console.log(`Epoch ${x.epoch} saturation is ${es}`)
+
+		reward[x.epoch] = (x.Amount/Math.pow(10,6))*this.rewardFactor*es
+		total_rewards += reward[x.epoch]
+	    })
+
+	    reward["total"] = total_rewards
+	    return reward
+	    
 	}
-	
-	//first get a saturation tables
-	const [rsaturation, rsat_meta] = await db.sequelize.query(`SELECT * FROM  PoolHistories where epoch BETWEEN ${epoch_array[0]} and ${epoch_array.slice(-1)[0]}`);
+	catch(err){
+	    console.log(err)
+	}
 
-	console.log(rsaturation)
-
-	let a = new Object()
-	
-	rsaturation.map(x => {
-	    a[x.epoch] = x.activeStake
-	})
-
-	console.log(a)
-	
-	//Get the stakes corresponding to the stake addr.
-	const [sresult, smeta] = await db.sequelize.query(`SELECT * FROM StakePools where stakeAddr="${this.saddr}" and epoch BETWEEN ${epoch_array[0]} and ${epoch_array.slice(-1)[0]}`);
-
-	console.log(sresult)
-
-	let reward = {}
-	sresult.map(x => {
-	    let saturation = a[x.epoch]/this.maxDelegation
-	    let es = (saturation > 1.0)? 1: saturation
-	    console.log(`Epoch ${x.epoch} saturation is ${es}`)
-
-	    reward[x.epoch] = (x.Amount/Math.pow(10,6))*this.rewardFactor*es
-	})
-
-	return reward
     }    
 
     async calculate_lt_reward(){
@@ -79,20 +97,12 @@ class Rewards{
 	//0.1T:0.2T:0.7T ratio of extra rewards to be distributed proportional to duration of delegation.
 	//Total duration in epochs: E
     }
-
-    
-    async connect_db(initialize){
-	await db.sequelize.authenticate();
-	console.log('Connection has been established successfully.');
-	if (initialize){
-	    await db.StakePool.sync({ force: true });
-	    console.log("The table for the StakePool model was just (re)created!");
-	}		
-    }
     
 }
 
 module.exports = {
+    service,
+    dbConnect,
     Rewards
 }
 
