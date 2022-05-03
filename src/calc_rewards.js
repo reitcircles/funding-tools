@@ -5,7 +5,6 @@ const axios = require("axios")
 const _ = require("lodash")
 const db = require("./db")
 
-
 let service = axios.create({
     baseURL: `${process.env.BASEURL}`,
     responseType: "json",
@@ -36,7 +35,7 @@ class Rewards{
 	this.rewardFactor = 0.19
 	this.maxDelegation = 64*Math.pow(10,12)//in lovelace
 	this.startEpoch = 332
-	
+	this.total_extra_rewards = 0.18*Math.pow(10,9)	
     }
 
 
@@ -91,11 +90,94 @@ class Rewards{
 	}
 
     }    
+    
+}
 
-    async calculate_lt_reward(){
-	//Total extra rewards: T
-	//0.1T:0.2T:0.7T ratio of extra rewards to be distributed proportional to duration of delegation.
-	//Total duration in epochs: E
+
+class ExtraReward{
+    constructor(){
+	this.reward_multiplier_thresholds = [10000*Math.pow(10,6), 20000*Math.pow(10,6), 70000*Math.pow(10,6)]
+    }
+    
+    async calc_region_params(region_index){	
+	let total_extra_rewards = 0.18*Math.pow(10,9)
+	let start_epoch = 310
+
+	this.region_index = region_index
+	this.total_num_epochs = 24 //will be updated later 
+	
+	switch(region_index){
+	case 0:
+	    this.amount_of_reward_allocated = 0.1*this.total_extra_rewards
+	    this.epoch_lower  = start_epoch
+	    this.epoch_higher = start_epoch+Math.round(this.total_num_epochs*0.1)
+	    break;
+	case 1:
+	    this.amount_of_reward_allocated = 0.2*this.total_extra_rewards
+	    this.epoch_lower  = start_epoch+Math.round(this.total_num_epochs*0.1)
+	    this.epoch_higher = start_epoch+Math.round(this.total_num_epochs*0.3)
+	    break;
+	case 2:
+	    this.amount_of_reward_allocated = 0.7*this.total_extra_rewards
+	    this.epoch_lower = start_epoch+Math.round(this.total_num_epochs*0.3)
+	    this.epoch_higher = start_epoch + this.total_num_epochs
+	    break;
+	default:
+	    console.log("Does not match any region")
+	    this.amount_of_reward_allocated = 0
+	}	
+    }
+
+
+    async determine_unit_of_reward(){
+	try{
+	    //first get a saturation tables
+	    const [num_1x_delegators, rsat_meta] = await db.sequelize.query(`select COUNT(DISTINCT(stakeAddr)) from StakePools where epoch >=${this.epoch_lower} and epoch <= ${epoch_higher} and Amount > 10000000000 and Amount < 20000000000;`);
+	    const [num_2x_delegators, rsat_meta] = await db.sequelize.query(`select COUNT(DISTINCT(stakeAddr)) from StakePools where epoch >=${this.epoch_lower} and epoch <= ${epoch_higher} and Amount > 20000000000 and Amount < 70000000000;`);
+	    const [num_3x_delegators, rsat_meta] = await db.sequelize.query(`select COUNT(DISTINCT(stakeAddr)) from StakePools where epoch >=${this.epoch_lower} and epoch <= ${epoch_higher} and Amount > 70000000000;`);
+
+	    const total_weight = num_1x_delegators + 2*num_2x_delegators + 3* num_3x_delegators
+	    const unit_of_reward = this.amount_of_reward_allocated / total_weight
+	    
+	    return unit_of_reward	    
+	}
+	catch(err){
+	    console.log(err)
+	}
+    }
+
+    async determine_reward_multiplier(amount){
+	var multiplier = 0
+	
+	if (amount > this.reward_multiplier_thresholds[0] and amount < this.reward_multiplier_thresholds[1]){
+	    multiplier = 1
+	}
+
+	if (amount > this.reward_multiplier_thresholds[1] and amount < this.reward_multiplier_thresholds[2]){
+	    multiplier = 2
+	}
+
+	if (amount > this.reward_multiplier_thresholds[2]){
+	    multiplier = 3
+	}
+	return multiplier	
+    }
+
+    async calc_extra_reward(sAddr){
+	try{
+            const [num_epoch_staked, rsat_meta] = await db.sequelize.query(`SELECT COUNT(epoch) FROM StakePools where stakeAddr=${sAddr}`);
+
+	    if (num_epoch_staked >= this.epoch_higher){
+		const  [amount_staked, rsat_meta] = await db.sequelize.query(`SELECT AVG(Amount) FROM `StakePools` where stakeAddr=${sAddr} and epoch>=${epoch_lower} and epoch<=${this.epoch_higher};`);
+		const multiplier = this.determine_reward_multiplier(amount_staked)
+
+		return multiplier*this.determine_unit_of_reward()
+	    }	    
+	    
+	}
+	catch(err){
+	    console.log(err)
+	}
     }
     
 }
@@ -113,15 +195,16 @@ if (require.main === module){
     (async() => {
 	
 	var saddr = "stake1u80038u04hrlrn5cjeskjmtddpahgnvxqsmmy7d8xq6uecq62zwsw"
-	
-	var r = new Rewards(saddr)
-	
+
 	//Connect to db
-	await r.connect_db(false)
-	
-	//Fetch data from blockfrost to custom db
+	await dbConnect(false)
+
+	var r = new Rewards(saddr)		
 	let reward = await r.calculate_base_reward([332,333])
 	console.log(reward)
+
+	var er = new ExtraReward()
+	
     })()
 }
     

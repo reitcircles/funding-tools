@@ -118,28 +118,43 @@ class PoolData {
     }
     
     async fetch_sp_data(){
-	var poolID = process.env.POOLID	
-	var end_epoch   = await this.find_latest_epoch()-1
-	var start_epoch = end_epoch - 2
-	var epoch_array = _.range(start_epoch, end_epoch)
-
-
-	console.log(epoch_array)
-	
-	//Now import all the data for the epoch delegation into our db
-	await this.fetch_stakes(epoch_array, poolID)
-	await this.fetch_pool_history(epoch_array, poolID)
+	try{
+	    var poolID = process.env.POOLID	
+	    var end_epoch   = await this.find_latest_epoch()-1
+	    var start_epoch = end_epoch - 36
+	    var epoch_array = _.range(start_epoch, end_epoch)
+	    	    
+	    console.log(epoch_array)	    
+	    //Now import all the data for the epoch delegation into our db
+	    await this.fetch_stakes(epoch_array, poolID)
+	    await this.fetch_pool_history(epoch_array, poolID)
+	}
+	catch(error){
+	    console.log(error)
+	}	   
 
     }
 
 
     async connect_db(initialize){
-	await db.sequelize.authenticate();
-	console.log('Connection has been established successfully.');
-	if (initialize){
-	    await db.StakePool.sync({ force: true });
-	    console.log("The table for the StakePool model was just (re)created!");
-	}		
+	try{
+	    await db.sequelize.authenticate();
+	    console.log('Connection has been established successfully.');
+	    if (initialize){
+		await db.StakePool.sync({ force: true });
+		console.log("The table for the StakePool model was just (re)created!");
+
+		await db.PoolHistory.sync({force: true})
+		console.log("The table for the Poolhistory model was just (re)created!");
+		
+		
+	    }			    
+	}
+	catch(error){
+	    console.log(error)
+	}	   
+	
+
     }
     
 }
@@ -147,7 +162,7 @@ class PoolData {
 if (require.main === module){
     (async() => {
 	
-	var r = new PoolD()
+	var r = new PoolData()
 	
 	//Be careful of this. It resets the Database.
 	var init = true
