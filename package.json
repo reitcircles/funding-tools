@@ -17,13 +17,25 @@
   },
   "homepage": "https://github.com/reitcircles/funding-tools#readme",
   "dependencies": {
+    "@dcspark/cardano-multiplatform-lib-nodejs": "^0.2.0",
+    "@emurgo/cardano-serialization-lib-asmjs": "^10.0.4",
     "axios": "^0.27.1",
+    "bip39": "^3.0.4",
+    "cardano-addresses": "^3.9.0",
+    "chai": "^4.3.6",
     "dotenv": "^16.0.0",
+    "esm": "^3.2.25",
+    "express": "^4.18.1",
     "fastify": "^3.29.0",
     "http-errors": "^2.0.0",
     "lodash": "^4.17.21",
+    "mocha": "^10.0.0",
     "mysql2": "^2.3.3",
-    "sequelize": "^6.19.0"
+    "sequelize": "^6.19.0",
+    "sequelize-mock": "^0.10.2",
+    "sinon": "^14.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "typescript": "^4.6.4"
+  }
 }
