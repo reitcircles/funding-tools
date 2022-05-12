@@ -23,6 +23,10 @@ const sarray = [
     "stake1u83w0jx9yc8tl028yhv0zjz5c3a6t24w54myv88tqq4au6gt3l4m6"
 ]
 
+const extra_stake_amounts = [10,20,30,40,50,60,70,80,90,100].map(x => {
+    return x*Math.pow(10,6)
+})
+
 const NUM_DELEGATORS = 5
 
 //Amounts in lovelace
@@ -36,8 +40,8 @@ const POOL_SATURATION = 64*Math.pow(10,12) //in lovelace. 64M ADA.
 const EPOCHS = _.range(250,260)
 
 
-function getStake(epoch){    
-    return (epoch < 254)? STAKE_AMOUNT_A:STAKE_AMOUNT_B 
+function getStake(epoch, extra_amount){
+    return (epoch < 254)? STAKE_AMOUNT_A+extra_amount:STAKE_AMOUNT_B+extra_amount 
 }
 
 
@@ -61,8 +65,9 @@ function generate_stakepools(){
     let t = EPOCHS.map(epoch => {
 
         let depoch = _.range(num_delegators).map((x,index) =>{
-            return {"poolID": POOLID, "epoch": epoch, "stakeAddr":sarray[index], "Amount":getStake(epoch)}
-        })        
+            return {"poolID": POOLID, "epoch": epoch, "stakeAddr":sarray[index], "Amount":getStake(epoch, extra_stake_amounts[index])}
+        })
+        
         spools = spools.concat(depoch)
     })
 
@@ -111,7 +116,7 @@ function calculate_rewards_separately(stake_addr,phistory, spools){
 
 describe("Testing the REIT rewards calculator", () => {
 
-    it("basic_reward_calculation", async () => {
+    it("basic_reward_calculation_stake_addr_1", async () => {
         let stake_addr    = sarray[0]
         let phistory = generate_poolhistory()
         let spools   = generate_stakepools()
@@ -127,7 +132,32 @@ describe("Testing the REIT rewards calculator", () => {
         console.log(`REIT rewards calculated separately:${calculated_rewards}`)
 
         //then compare both
-        assert.equal(reit_rewards.total, calculated_rewards, "Could not match calculated rewards with that from library")
+        const rr = parseFloat(reit_rewards.total).toFixed(2);
+        const crr = parseFloat(calculated_rewards).toFixed(2);
+        assert.equal(rr, crr, "Could not match calculated rewards with that from library")
+        
+    });
+
+
+    it("basic_reward_calculation_stake_addr_2", async () => {
+        let stake_addr    = sarray[1]
+        let phistory = generate_poolhistory()
+        let spools   = generate_stakepools()
+
+        //first calculate using library function
+        let rewards  = new cr.Rewards(stake_addr)
+        let reit_rewards = await rewards.calculate_base_reward(phistory,spools)
+
+        //Then calculate independently
+        let calculated_rewards = calculate_rewards_separately(stake_addr,phistory,spools)
+
+        console.log(`REIT tokens as reward: ${reit_rewards.total}`)
+        console.log(`REIT rewards calculated separately:${calculated_rewards}`)
+
+        //then compare both
+        const rr = parseFloat(reit_rewards.total).toFixed(2);
+        const crr = parseFloat(calculated_rewards).toFixed(2);
+        assert.equal(rr, crr, "Could not match calculated rewards with that from library")
         
     });
 });

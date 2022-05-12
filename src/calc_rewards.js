@@ -91,7 +91,7 @@ class Rewards{
 		    reward[x.epoch] = stake*this.rewardFactor*es
 		    total_rewards += reward[x.epoch]
                     
-                    console.log(`rewards in epoch:${x.epoch} is ${reward[x.epoch]} with saturation:${es} and stake${stake}`)
+                    console.log(`rewards in epoch:${x.epoch} is ${reward[x.epoch]} with saturation:${es} and stake: ${stake}`)
                 }                    
 	    })
 
