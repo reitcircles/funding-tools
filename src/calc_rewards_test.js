@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 
+'use strict';
+
+const mocha = require('mocha')
+const assert = require('assert');
+const sinon = require("sinon")
 const sequelize = require('sequelize')
 const smock = require('sequelize-mock')
 const cr = require("./calc_rewards")
@@ -18,9 +23,15 @@ const sarray = [
     "stake1u83w0jx9yc8tl028yhv0zjz5c3a6t24w54myv88tqq4au6gt3l4m6"
 ]
 
+const NUM_DELEGATORS = 5
+
 //Amounts in lovelace
 const STAKE_AMOUNT_A = 50000*Math.pow(10,6)
 const STAKE_AMOUNT_B = 100000*Math.pow(10,6)
+
+const TOTAL_STAKE_A = NUM_DELEGATORS*STAKE_AMOUNT_A
+const TOTAL_STAKE_B = TOTAL_STAKE_A + NUM_DELEGATORS*STAKE_AMOUNT_B
+
 
 function getStake(epoch){    
     return (epoch < 254)? STAKE_AMOUNT_A:STAKE_AMOUNT_B 
@@ -32,28 +43,17 @@ const EPOCHS = _.range(250,260)
 
 //Some mock data that we require
 const POOLID="0ce16f30fdae49328160cb3d68e3fd109ca86b580f4f47882307f943"
-const poolHistory = [
-    {"poolID": POOLID, "epoch": EPOCHS[0], "activeStake":250000000000, "activeSize": 0.02, "rewards": 10000},
-    {"poolID": POOLID, "epoch": EPOCHS[1], "activeStake":250000000000, "activeSize": 0.02, "rewards": 10000},
-    {"poolID": POOLID, "epoch": EPOCHS[2], "activeStake":250000000000, "activeSize": 0.02, "rewards": 10000},
-    {"poolID": POOLID, "epoch": EPOCHS[3], "activeStake":250000000000, "activeSize": 0.02, "rewards": 10000},
-    {"poolID": POOLID, "epoch": EPOCHS[4], "activeStake":250000000000, "activeSize": 0.02, "rewards": 10000},
-    {"poolID": POOLID, "epoch": EPOCHS[5], "activeStake":750000000000, "activeSize": 0.02, "rewards": 10000},
-    {"poolID": POOLID, "epoch": EPOCHS[6], "activeStake":750000000000, "activeSize": 0.06, "rewards": 10000},
-    {"poolID": POOLID, "epoch": EPOCHS[7], "activeStake":750000000000, "activeSize": 0.06, "rewards": 10000},
-    {"poolID": POOLID, "epoch": EPOCHS[8], "activeStake":750000000000, "activeSize": 0.06, "rewards": 10000},
-    {"poolID": POOLID, "epoch": EPOCHS[9], "activeStake":750000000000, "activeSize": 0.06, "rewards": 10000},
-]
 
 
-const StakePools = [
-    {"poolID": POOLID, "epoch": 250, "stakeAddr":sarray[0], "Amount":STAKE_AMOUNT_A},
-    {"poolID": POOLID, "epoch": 250, "stakeAddr":sarray[1], "Amount":STAKE_AMOUNT_A},
-    {"poolID": POOLID, "epoch": 250, "stakeAddr":sarray[2], "Amount":STAKE_AMOUNT_A},
-    {"poolID": POOLID, "epoch": 250, "stakeAddr":sarray[3], "Amount":STAKE_AMOUNT_A},
-    {"poolID": POOLID, "epoch": 250, "stakeAddr":sarray[4], "Amount":STAKE_AMOUNT_A}
-]
+function generate_poolhistory(){
 
+    return  EPOCHS.map((epoch,index) => {
+        let stake = (index < 5)?TOTAL_STAKE_A:TOTAL_STAKE_B        
+        return  {"poolID": POOLID, "epoch": epoch, "activeStake":stake, "activeSize": 0.02, "rewards": 10000}
+    })
+
+    
+}
 
 function generate_stakepools(){
     var spools = []
@@ -76,29 +76,26 @@ function generate_stakepools(){
 }
 
 
-// describe("Testing the REIT rewards calculator", function() {
-//   describe("basic_reward_calculation", function() {
-//       //Now replace the function cr.db with our own function.
-//       //This should then supply the above mock data instead of using the database.
+describe("Testing the REIT rewards calculator", () => {
 
-//       const db = sinon.createStubInstance(cr.db.sequelize);
-//       db.query.callsFake((q) => {
-//           if (query.includes("PoolHistories")){
-//               return poolHistory
-//           }
-          
-//           if (query.includes("StakePools")){
-//               return StakePools
-//           }
-//       })
-//   });
+    it("basic_reward_calculation", async () => {
+        
+        let rewards  = new cr.Rewards(sarray[0])
+        let phistory = generate_poolhistory()
+        let spools   = generate_stakepools()
 
-//   describe("Hex to RGB conversion", function() {
-//    // specification for HEX to RGB converter
-//   });
-// });
+
+        console.log(phistory)
+        console.log(spools)
+        
+        let reit_rewards = await rewards.calculate_base_reward(phistory,spools)
+        
+        console.log(`REIT tokens as reward: ${reit_rewards.total}`)
+    });
+});
 
 
 module.exports = {
+    generate_poolhistory,
     generate_stakepools
 }

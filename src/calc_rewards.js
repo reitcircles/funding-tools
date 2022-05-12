@@ -39,36 +39,51 @@ class Rewards{
 	this.total_extra_rewards = 0.18*Math.pow(10,9)	
     }
 
-    async calculate_base_reward(epoch_array){
+    async fetch_data(epoch_array){
+        try{
 
-	try{
-	    let total_rewards = 0
-	    
-	    //default value of epoch_array
+            //default value of epoch_array
 	    if (epoch_array == null){
 		epoch_array = _.range(this.startEpoch, this.find_latest_epoch()-1)	    
 	    }
-	    
-	    //first get a saturation tables
+            
+            //first get a saturation tables
 	    const [rsaturation, rsat_meta] = await db.sequelize.query(`SELECT * FROM  PoolHistories where epoch BETWEEN ${epoch_array[0]} and ${epoch_array.slice(-1)[0]}`);
 
-	    console.log(rsaturation)
+            console.log(rsaturation)
+            
+            //Get the stakes corresponding to the stake addr.
+	    const [sresult, smeta] = await db.sequelize.query(`SELECT * FROM StakePools where stakeAddr="${this.saddr}" and epoch BETWEEN ${epoch_array[0]} and ${epoch_array.slice(-1)[0]}`);
+            console.log(sresult)
+            
+            return {
+                rsaturation,
+                sresult
+            }
+            
+        }
+        catch(err){
+            console.error(err)
+        }
+        
+    }
+    
+    async calculate_base_reward(saturationInfo, stakingInfo){
 
-	    let a = new Object()
-	    
-	    rsaturation.map(x => {
+	try{
+	    let total_rewards = 0
+            
+            
+	    let a = new Object()	    
+	    saturationInfo.map(x => {
 		a[x.epoch] = x.activeStake
 	    })
 
 	    console.log(a)
-	    
-	    //Get the stakes corresponding to the stake addr.
-	    const [sresult, smeta] = await db.sequelize.query(`SELECT * FROM StakePools where stakeAddr="${this.saddr}" and epoch BETWEEN ${epoch_array[0]} and ${epoch_array.slice(-1)[0]}`);
 
-	    console.log(sresult)
 
 	    let reward = {}
-	    sresult.map(x => {
+	    stakingInfo.map(x => {
 		let saturation = a[x.epoch]/this.maxDelegation
 		let es = (saturation > 1.0)? 1: saturation
 		console.log(`Epoch ${x.epoch} saturation is ${es}`)
@@ -78,8 +93,7 @@ class Rewards{
 	    })
 
 	    reward["total"] = total_rewards
-	    return reward
-	    
+	    return reward	    
 	}
 	catch(err){
 	    console.log(err)
