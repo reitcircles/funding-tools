@@ -4,6 +4,7 @@ require('dotenv').config()
 const axios = require("axios")
 const _ = require("lodash")
 const db = require("./db")
+const ADA_REIT_stake_conv_factor = 0.19
 
 let service = axios.create({
     baseURL: `${process.env.BASEURL}`,
@@ -50,11 +51,11 @@ class Rewards{
             //first get a saturation tables
 	    const [rsaturation, rsat_meta] = await db.sequelize.query(`SELECT * FROM  PoolHistories where epoch BETWEEN ${epoch_array[0]} and ${epoch_array.slice(-1)[0]}`);
 
-            console.log(rsaturation)
+            //console.log(rsaturation)
             
             //Get the stakes corresponding to the stake addr.
 	    const [sresult, smeta] = await db.sequelize.query(`SELECT * FROM StakePools where stakeAddr="${this.saddr}" and epoch BETWEEN ${epoch_array[0]} and ${epoch_array.slice(-1)[0]}`);
-            console.log(sresult)
+            //console.log(sresult)
             
             return {
                 rsaturation,
@@ -71,25 +72,27 @@ class Rewards{
     async calculate_base_reward(saturationInfo, stakingInfo){
 
 	try{
-	    let total_rewards = 0
-            
-            
+	    let total_rewards = 0                        
 	    let a = new Object()	    
+
 	    saturationInfo.map(x => {
 		a[x.epoch] = x.activeStake
 	    })
 
-	    console.log(a)
-
-
 	    let reward = {}
-	    stakingInfo.map(x => {
-		let saturation = a[x.epoch]/this.maxDelegation
-		let es = (saturation > 1.0)? 1: saturation
-		console.log(`Epoch ${x.epoch} saturation is ${es}`)
 
-		reward[x.epoch] = (x.Amount/Math.pow(10,6))*this.rewardFactor*es
-		total_rewards += reward[x.epoch]
+	    stakingInfo.map(x => {
+
+                if (x.stakeAddr == this.saddr){                                   
+		    let saturation = a[x.epoch]/this.maxDelegation
+		    let es = (saturation > 1.0)? 1: saturation
+                    let stake = (x.Amount/Math.pow(10,6))
+                    
+		    reward[x.epoch] = stake*this.rewardFactor*es
+		    total_rewards += reward[x.epoch]
+                    
+                    console.log(`rewards in epoch:${x.epoch} is ${reward[x.epoch]} with saturation:${es} and stake${stake}`)
+                }                    
 	    })
 
 	    reward["total"] = total_rewards
@@ -206,6 +209,7 @@ class ExtraReward{
 
 module.exports = {
     db,
+    ADA_REIT_stake_conv_factor,
     service,
     dbConnect,
     Rewards,

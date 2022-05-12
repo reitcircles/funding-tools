@@ -26,11 +26,14 @@ const sarray = [
 const NUM_DELEGATORS = 5
 
 //Amounts in lovelace
-const STAKE_AMOUNT_A = 50000*Math.pow(10,6)
-const STAKE_AMOUNT_B = 100000*Math.pow(10,6)
+const STAKE_AMOUNT_A = 50000*Math.pow(10,6)   //amount in lovelace
+const STAKE_AMOUNT_B = 100000*Math.pow(10,6)  //Amount in lovelace
 
 const TOTAL_STAKE_A = NUM_DELEGATORS*STAKE_AMOUNT_A
 const TOTAL_STAKE_B = TOTAL_STAKE_A + NUM_DELEGATORS*STAKE_AMOUNT_B
+
+const POOL_SATURATION = 64*Math.pow(10,12) //in lovelace. 64M ADA.
+const EPOCHS = _.range(250,260)
 
 
 function getStake(epoch){    
@@ -38,21 +41,16 @@ function getStake(epoch){
 }
 
 
-const EPOCHS = _.range(250,260)
-
-
 //Some mock data that we require
 const POOLID="0ce16f30fdae49328160cb3d68e3fd109ca86b580f4f47882307f943"
 
 
 function generate_poolhistory(){
-
+    
     return  EPOCHS.map((epoch,index) => {
         let stake = (index < 5)?TOTAL_STAKE_A:TOTAL_STAKE_B        
         return  {"poolID": POOLID, "epoch": epoch, "activeStake":stake, "activeSize": 0.02, "rewards": 10000}
-    })
-
-    
+    })    
 }
 
 function generate_stakepools(){
@@ -60,11 +58,7 @@ function generate_stakepools(){
     var num_delegators = 5
     var delegator_per_epoch = new Array(num_delegators)
 
-    console.log(delegator_per_epoch)
-    
     let t = EPOCHS.map(epoch => {
-
-        console.log(epoch)
 
         let depoch = _.range(num_delegators).map((x,index) =>{
             return {"poolID": POOLID, "epoch": epoch, "stakeAddr":sarray[index], "Amount":getStake(epoch)}
@@ -76,21 +70,65 @@ function generate_stakepools(){
 }
 
 
+function get_pool_saturation(epoch, phistory){
+    const pool_saturation = 0
+    let saturation = 0
+    
+    phistory.forEach(entry => {
+        if (entry.epoch == epoch){
+            saturation =  entry.activeStake/POOL_SATURATION
+        }
+    })
+
+    return saturation    
+}
+
+function calculate_rewards_separately(stake_addr,phistory, spools){
+    const SWAP_FACTOR = cr.ADA_REIT_stake_conv_factor
+    let total_rewards = 0
+
+    console.log("-------------------------REFERENCE CALCULATION OF REWARDS---------------------------")
+    
+    spools.forEach((entry, index) => {
+        
+        if (entry.stakeAddr == stake_addr){
+            const stake = entry.Amount
+            const epoch = entry.epoch
+            const pool_epoch_saturation = get_pool_saturation(epoch, phistory)
+
+            //console.log(`Calc saturation in epoch:${epoch} is ${pool_epoch_saturation} and stake this epoch:${stake}`)
+            
+            let reward_this_epoch = SWAP_FACTOR*pool_epoch_saturation*stake/Math.pow(10,6)
+            
+            console.log(`rewards this epoch ${entry.epoch}  is ${reward_this_epoch} using saturation:${pool_epoch_saturation} and stake:${stake}` )
+            total_rewards +=  reward_this_epoch //convert back from lovelace 
+        }
+    })
+
+    console.log(`total rewards calculated is:${total_rewards}`)
+    return total_rewards    
+}    
+
 describe("Testing the REIT rewards calculator", () => {
 
     it("basic_reward_calculation", async () => {
-        
-        let rewards  = new cr.Rewards(sarray[0])
+        let stake_addr    = sarray[0]
         let phistory = generate_poolhistory()
         let spools   = generate_stakepools()
 
-
-        console.log(phistory)
-        console.log(spools)
-        
+        //first calculate using library function
+        let rewards  = new cr.Rewards(stake_addr)
         let reit_rewards = await rewards.calculate_base_reward(phistory,spools)
-        
+
+        //Then calculate independently
+        let calculated_rewards = calculate_rewards_separately(stake_addr,phistory,spools)
+
         console.log(`REIT tokens as reward: ${reit_rewards.total}`)
+        console.log(`REIT rewards calculated separately:${calculated_rewards}`)
+
+        //then compare both
+        assert.equal(reit_rewards.total, calculated_rewards, "Could not match calculated rewards with that from library")
+        
     });
 });
 
