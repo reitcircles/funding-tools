@@ -28,8 +28,9 @@ fastify.get('/rewards/:stakeAddr', async (request, reply) => {
 	let R = new cr.Rewards(request.params.stakeAddr)
 	
 	//Fetch data from blockfrost to custom db
-	let reward = await R.calculate_base_reward([332,333])
-
+        var data =  await R.fetch_data([312,313,314,315,316])
+	let reward = await R.calculate_base_reward(data.rsaturation, data.sresult)
+        
 	reply.send({baseReward: reward})
     }
     else
@@ -45,7 +46,7 @@ if (require.main === module){
     // Run the server!
     const start = async () => {
 	try {
-	    await fastify.listen(3000)
+	    await fastify.listen(3001)
 	} catch (err) {
 	    fastify.log.error(err)
 	    process.exit(1)

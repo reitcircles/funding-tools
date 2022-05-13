@@ -75,6 +75,9 @@ class Rewards{
 	    let total_rewards = 0                        
 	    let a = new Object()	    
 
+            console.log(`saturation info:${saturationInfo}`)
+            console.log(`stakinginfo : ${stakingInfo}`)
+            
 	    saturationInfo.map(x => {
 		a[x.epoch] = x.activeStake
 	    })
@@ -87,7 +90,6 @@ class Rewards{
 		    let saturation = a[x.epoch]/this.maxDelegation
 		    let es = (saturation > 1.0)? 1: saturation
                     let stake = (x.Amount/Math.pow(10,6))
-                    
 		    reward[x.epoch] = stake*this.rewardFactor*es
 		    total_rewards += reward[x.epoch]
                     
@@ -227,8 +229,9 @@ if (require.main === module){
 	//Connect to db
 	await dbConnect(false)
 
-	var r = new Rewards(saddr)		
-	let reward = await r.calculate_base_reward([332,333])
+	var r = new Rewards(saddr)
+        let data = await r.fetch_data([332,333])
+	let reward = await r.calculate_base_reward(data.rsaturation, data.sresult)
 	console.log(reward)
 
 	var er = new ExtraReward()

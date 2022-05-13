@@ -121,7 +121,7 @@ class PoolData {
 	try{
 	    var poolID = process.env.POOLID	
 	    var end_epoch   = await this.find_latest_epoch()-1
-	    var start_epoch = end_epoch - 36
+	    var start_epoch = end_epoch - 25
 	    var epoch_array = _.range(start_epoch, end_epoch)
 	    	    
 	    console.log(epoch_array)	    
