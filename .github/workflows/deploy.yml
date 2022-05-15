@@ -1,0 +1,29 @@
+name: deploy-cr
+on:
+  workflow_dispatch:
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout'
+      uses: 'actions/checkout@main'
+
+    - name: 'auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GCR_KEY }}'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v0'
+
+    - name: 'Use gcloud CLI'
+      run: 'gcloud info'
+
+    - name: 'Now build docker image and export to artifact repo'
+      working-directory: './test-app'
+      run: 'gcloud builds submit --tag us-west2-docker.pkg.dev/sproj-346921/quickstart-docker-repo/test-app .'
+
+    - name: 'Now deploy to cloud run'
+      working-directory: './test-app'      
+      run: 'gcloud run deploy cportal-app  --image us-west2-docker.pkg.dev/sproj-346921/quickstart-docker-repo/test-app --platform managed  --region us-west2 --allow-unauthenticated
