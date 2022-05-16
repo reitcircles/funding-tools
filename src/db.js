@@ -4,7 +4,13 @@ const { Sequelize, DataTypes } = require('sequelize');
 
 const sequelize = new Sequelize(process.env.MYSQL_DATABASE, process.env.MYSQL_USERNAME, process.env.MYSQL_PASSWORD, {
     host: process.env.MYSQL_HOSTNAME,
-    dialect: 'mysql'
+    dialect: 'mysql',
+    pool: {
+      max: 20,
+      min: 0,
+      acquire: 60000,
+      idle: 10000
+    }
 });
 
 
