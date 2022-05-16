@@ -20,6 +20,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: "16"
-      - run: npm install
+      - name: Install the packages
+        run: npm --prefix ./src install
       - name: Run data import script
         run: node ./src/fetch_data.js
