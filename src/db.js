@@ -6,7 +6,7 @@ const sequelize = new Sequelize(process.env.MYSQL_DATABASE, process.env.MYSQL_US
     host: process.env.MYSQL_HOSTNAME,
     dialect: 'mysql',
     pool: {
-      max: 20,
+      max: 50,
       min: 0,
       acquire: 60000,
       idle: 10000
