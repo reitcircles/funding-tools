@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 
+require('dotenv').config()
+
 // Require the framework and instantiate it
 const fastify = require('fastify')({ logger: true })
 const createError = require('http-errors')
-
 const cr = require("./calc_rewards")
 
 
@@ -46,7 +47,7 @@ if (require.main === module){
     // Run the server!
     const start = async () => {
 	try {
-	    await fastify.listen(3001)
+	    await fastify.listen(process.env.PORT)
 	} catch (err) {
 	    fastify.log.error(err)
 	    process.exit(1)
