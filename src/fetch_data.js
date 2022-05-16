@@ -47,33 +47,44 @@ class PoolData {
     async fetch_stakes(epoch_array,poolID) {
 	var stake_value = 0
 	var num_pages = Math.floor(await this.find_num_delegators(poolID)/100) + 1
-	var found = false
+	var found = false        
 
 	try{
 
 	    epoch_array.map(async epoch => {
+                try{                    
+		    for (let page_id=1; (page_id<num_pages) && (stake_value == 0); page_id++){
+		        
+		        var URL = `/epochs/${epoch}/stakes/${poolID}`
+		        var params = {
+			    params: {
+			        page: page_id,
+			    }
+		        }
+		        var response = await service.get(URL, params)		
+		        //console.log(`statusCode: ${response.status}`)
+                        
+                        await Promise.all(
+                            
+                            response.data.map(async(x,index) => {
+			        //since we are going through each element, just store them in our database
 
-		for (let page_id=1; (page_id<num_pages) && (stake_value == 0); page_id++){
-		    
-		    var URL = `/epochs/${epoch}/stakes/${poolID}`
-		    var params = {
-			params: {
-			    page: page_id,
-			}
+			        await db.StakePool.create({
+	    		            poolid: poolID,
+	    		            epoch: epoch,
+	    		            stakeAddr: x.stake_address,
+	    		            Amount: x.amount
+			        })
+	                        
+		            })
+                        )
+                        
 		    }
-		    var response = await service.get(URL, params)		
-		    //console.log(`statusCode: ${response.status}`)
+                }                		    
+                catch(err){
+                    console.error(err)
+                }
 
-		    response.data.map((x,index) => {
-			//since we are going through each element, just store them in our database
-			db.StakePool.create({
-	    		    poolid: poolID,
-	    		    epoch: epoch,
-	    		    stakeAddr: x.stake_address,
-	    		    Amount: x.amount
-			})	    
-		    })
-		}		
 	    })
 	    
 	    return 0	    
@@ -99,18 +110,29 @@ class PoolData {
 	    console.log(response.data)
 
 	    //Now send this data to our database
-	    response.data.map(data => {
-		if (epoch_array.includes(data.epoch)) {
-		    db.PoolHistory.create({
-			poolid: poolID,
-			epoch: data.epoch,
-			activeStake: data.active_stake,
-			activeSize: data.active_size,
-			rewards: data.rewards                   
-		    });
-		    
-		}
-	    })	    	    
+
+            await Promise.all(
+                response.data.map(async (data) => {
+
+                    try{
+                        if (epoch_array.includes(data.epoch)) {
+                            
+		            await db.PoolHistory.create({
+			        poolid: poolID,
+			        epoch: data.epoch,
+			        activeStake: data.active_stake,
+			        activeSize: data.active_size,
+			        rewards: data.rewards                   
+		            });
+		            
+		        }
+                        
+                    }
+                    catch(err){
+                        console.error(err)
+                    }
+	        })	    	    
+            )
 	}
 	catch(error){
 	    console.error(error)
