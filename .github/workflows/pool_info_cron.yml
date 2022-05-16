@@ -21,6 +21,5 @@ jobs:
         with:
           node-version: "16"
       - run: npm install
-      # Runs a single command using the runners shell
       - name: Run data import script
         run: node ./src/fetch_data.js
