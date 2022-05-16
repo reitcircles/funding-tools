@@ -24,4 +24,5 @@ jobs:
       - name: Install the packages
         run: npm --prefix ./src install
       - name: Run data import script
-        run: node ./src/fetch_data.js
+        run: POOLID=${{ secrets.POOLID }} BASEURL=${{ secrets.BASEURL }}  PROJECT_ID=${{ secrets.PROJECT_ID }} MYSQL_USERNAME=${{ secrets.MYSQL_USERNAME }} \
+        MYSQL_PASSWORD=${{ secrets.MSQL_PASSWORD }} MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE}} node ./src/fetch_data.js
