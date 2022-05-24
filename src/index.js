@@ -7,6 +7,18 @@ require('dotenv').config()
 const fastify = require('fastify')({ logger: true })
 const createError = require('http-errors')
 const cr = require("./calc_rewards")
+const cors = require('@fastify/cors');
+
+
+
+fastify.register((fastify, options, done) => {
+    fastify.register(require("@fastify/cors"), {
+        origin: "*",
+        methods: ["GET"]
+    });
+    done();
+});
+
 
 
 // Declare a route
