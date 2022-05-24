@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-
 require('dotenv').config()
 
 // Require the framework and instantiate it
@@ -9,11 +8,12 @@ const createError = require('http-errors')
 const cr = require("./calc_rewards")
 const cors = require('@fastify/cors');
 
+const ALLOWED_DOMAINS=['https://reitcircles.webflow.io', 'https://www.reitcircles.com']
 
 
 fastify.register((fastify, options, done) => {
     fastify.register(require("@fastify/cors"), {
-        origin: "*",
+        origin: ALLOWED_DOMAINS,
         methods: ["GET"]
     });
     done();
