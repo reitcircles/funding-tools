@@ -5,19 +5,16 @@ require('dotenv').config()
 // Require the framework and instantiate it
 const fastify = require('fastify')({ logger: true })
 const createError = require('http-errors')
+const fdata = require("./fetch_data");
 const cr = require("./calc_rewards")
-const cors = require('@fastify/cors');
 
 const ALLOWED_DOMAINS=['https://reitcircles.webflow.io', 'https://www.reitcircles.com']
 
 
-fastify.register((fastify, options, done) => {
-    fastify.register(require("@fastify/cors"), {
-        origin: ALLOWED_DOMAINS,
-        methods: ["GET"]
-    });
-    done();
-});
+fastify.register(require('@fastify/cors'), { 
+    origin: '*',
+    methods: ['GET']
+})
 
 
 
@@ -39,8 +36,11 @@ fastify.get('/rewards/:stakeAddr', async (request, reply) => {
 	await cr.dbConnect(false)
 	
 	let R = new cr.Rewards(request.params.stakeAddr)
-	
-	//Fetch data from blockfrost to custom db
+
+        var start_epoch = process.env.START_EPOCH
+        var end_epoch = fdata.PoolData().find_latest_epoch()
+
+        //TODO: We will replace array with range of (start_epoch,end_epoch)
         var data =  await R.fetch_data([312,313,314,315,316])
 	let reward = await R.calculate_base_reward(data.rsaturation, data.sresult)
         

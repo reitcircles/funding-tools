@@ -143,10 +143,11 @@ class PoolData {
 	try{
 	    var poolID = process.env.POOLID	
 	    var end_epoch   = await this.find_latest_epoch()-1
-	    var start_epoch = end_epoch - 25
+	    var start_epoch = process.env.BEGIN_EPOCH
 	    var epoch_array = _.range(start_epoch, end_epoch)
 	    	    
-	    console.log(epoch_array)	    
+	    console.log(epoch_array)
+            
 	    //Now import all the data for the epoch delegation into our db
 	    await this.fetch_stakes(epoch_array, poolID)
 	    await this.fetch_pool_history(epoch_array, poolID)
@@ -181,6 +182,11 @@ class PoolData {
     
 }
 
+module.exports = {
+    PoolData
+}
+
+
 if (require.main === module){
     (async() => {
 
@@ -202,4 +208,5 @@ if (require.main === module){
 	
     })()
 }
-    
+
+

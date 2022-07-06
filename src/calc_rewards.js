@@ -4,7 +4,16 @@ require('dotenv').config()
 const axios = require("axios")
 const _ = require("lodash")
 const db = require("./db")
+const fdata = require("./fetch_data")
 const ADA_REIT_stake_conv_factor = 0.19
+const fdata = require("./fetch_data");
+
+//Set of constants relevant for calculation
+const START_EPOCH  = process.env.BEGIN_EPOCH
+const TOTAL_EPOCHS = 24
+const END_EPOCH    = START_EPOCH+TOTAL_EPOCHS
+
+
 
 let service = axios.create({
     baseURL: `${process.env.BASEURL}`,
@@ -36,7 +45,7 @@ class Rewards{
 	this.saddr = stakeAddr
 	this.rewardFactor = 0.19
 	this.maxDelegation = 64*Math.pow(10,12)//in lovelace
-	this.startEpoch = 332
+	this.startEpoch = process.env.BEGIN_EPOCH
 	this.total_extra_rewards = 0.18*Math.pow(10,9)	
     }
 
@@ -45,7 +54,8 @@ class Rewards{
 
             //default value of epoch_array
 	    if (epoch_array == null){
-		epoch_array = _.range(this.startEpoch, this.find_latest_epoch()-1)	    
+                let pdata = fdata.PoolData()
+		epoch_array = _.range(this.startEpoch, pdata.find_latest_epoch()-1)	    
 	    }
             
             //first get a saturation tables
@@ -108,11 +118,6 @@ class Rewards{
     
 }
 
-
-//Set of constants relevant for calculation
-const START_EPOCH  = process.env.BEGIN_EPOCH
-const TOTAL_EPOCHS = 24
-const END_EPOCH    = START_EPOCH+TOTAL_EPOCHS
 
 class ExtraReward{
     constructor(){
